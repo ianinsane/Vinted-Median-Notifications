@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  vinted-bot:
+    build: .
+    container_name: vinted-bot
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - VINTED_UI_USER=${VINTED_UI_USER:-admin}
+      - VINTED_UI_PASS=${VINTED_UI_PASS:-changeme}
+      - WEB_UI_PORT=8000
+    volumes:
+      - ./vinted_notifications.db:/app/vinted_notifications.db
+      - ./logs:/app/logs
+      - ./.env:/app/.env

@@ -37,8 +37,8 @@ class Items:
         Raises:
             HTTPError: If the request to the Vinted API fails.
         """
-        # Extract the domain from the URL and set the locale
-        locale = urlparse(url).netloc
+        # Immer die französische Domain für API-Requests verwenden
+        locale = "www.vinted.fr"
         requester.set_locale(locale)
 
         # Parse the URL to get the API parameters

@@ -13,10 +13,16 @@ def create_sqlite_db():
         conn = get_db_connection()
         cursor = conn.cursor()
         # Using proper foreign key relationship between items and queries
-        cursor.execute("CREATE TABLE queries (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, last_item NUMERIC)")
+        cursor.execute("CREATE TABLE queries (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, last_item NUMERIC, name TEXT, threshold_pct INTEGER DEFAULT 60, poll_interval_s INTEGER DEFAULT 300, active INTEGER DEFAULT 1)")
         cursor.execute(
             "CREATE TABLE items (item NUMERIC, title TEXT, price NUMERIC, currency TEXT, timestamp NUMERIC, photo_url TEXT, query_id INTEGER, FOREIGN KEY(query_id) REFERENCES queries(id))")
         cursor.execute("CREATE TABLE allowlist (country TEXT)")
+        # Preis-Historie für Median-Berechnung
+        cursor.execute("CREATE TABLE IF NOT EXISTS price_history (category_key TEXT, price NUMERIC, ts NUMERIC, PRIMARY KEY (category_key, ts))")
+        # Gesehene Items für Duplikat-Vermeidung
+        cursor.execute("CREATE TABLE IF NOT EXISTS seen_items (item_id TEXT PRIMARY KEY, query_id INTEGER, first_seen_ts NUMERIC)")
+        # System-Logs für UI
+        cursor.execute("CREATE TABLE IF NOT EXISTS system_logs (log_id INTEGER PRIMARY KEY AUTOINCREMENT, level TEXT, message TEXT, ts NUMERIC)")
         # Add a parameters table
         cursor.execute("CREATE TABLE parameters (key TEXT, value TEXT)")
         # Telegram parameters
@@ -124,7 +130,7 @@ def get_queries():
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT id, query, last_item FROM queries")
+        cursor.execute("SELECT id, query, last_item, name, threshold_pct, poll_interval_s, active FROM queries")
         return cursor.fetchall()
     except Exception:
         print_exc()
@@ -416,3 +422,121 @@ def get_items_per_day():
     finally:
         if conn:
             conn.close()
+
+
+def add_price_history(category_key, price, ts):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR REPLACE INTO price_history (category_key, price, ts) VALUES (?, ?, ?)", (category_key, price, ts))
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+def get_price_history(category_key, days=30, max_points=500):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Hole die letzten max_points der letzten days
+        cursor.execute("SELECT price FROM price_history WHERE category_key=? AND ts >= strftime('%s','now','-{} days') ORDER BY ts DESC LIMIT ?".format(days), (category_key, max_points))
+        return [row[0] for row in cursor.fetchall()]
+    except Exception:
+        print_exc()
+        return []
+    finally:
+        if conn:
+            conn.close()
+
+def get_median_price(category_key, days=30, max_points=500):
+    import statistics
+    prices = get_price_history(category_key, days, max_points)
+    if prices:
+        return statistics.median(prices)
+    return None
+
+def add_seen_item(item_id, query_id, first_seen_ts):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR IGNORE INTO seen_items (item_id, query_id, first_seen_ts) VALUES (?, ?, ?)", (item_id, query_id, first_seen_ts))
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+def is_item_seen(item_id):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1 FROM seen_items WHERE item_id=?", (item_id,))
+        return cursor.fetchone() is not None
+    except Exception:
+        print_exc()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+def add_system_log(level, message, ts):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO system_logs (level, message, ts) VALUES (?, ?, ?)", (level, message, ts))
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+def update_query_settings(query_id, name=None, threshold_pct=None, poll_interval_s=None, active=None):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        updates = []
+        params = []
+        if name is not None:
+            updates.append("name=?")
+            params.append(name)
+        if threshold_pct is not None:
+            updates.append("threshold_pct=?")
+            params.append(threshold_pct)
+        if poll_interval_s is not None:
+            updates.append("poll_interval_s=?")
+            params.append(poll_interval_s)
+        if active is not None:
+            updates.append("active=?")
+            params.append(active)
+        if updates:
+            params.append(query_id)
+            cursor.execute(f"UPDATE queries SET {', '.join(updates)} WHERE id=?", params)
+            conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+def get_query_median_info(query_id, category_key=None):
+    import statistics
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Use query-based category_key if not given
+    if not category_key:
+        category_key = f"query_{query_id}"
+    cursor.execute("SELECT price FROM price_history WHERE category_key=? ORDER BY ts DESC", (category_key,))
+    prices = [row[0] for row in cursor.fetchall()]
+    median = statistics.median(prices) if prices else None
+    last_price = prices[0] if prices else None
+    return {"count": len(prices), "median": median, "last_price": last_price}

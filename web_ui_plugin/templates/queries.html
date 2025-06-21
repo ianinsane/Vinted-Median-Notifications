@@ -48,8 +48,15 @@
                         <thead>
                         <tr>
                             <th>#</th>
+                            <th>Name</th>
                             <th>Query</th>
+                            <th>Threshold %</th>
+                            <th>Poll Interval [s]</th>
+                            <th>Status</th>
                             <th>Last Found Item</th>
+                            <th>Median Points</th>
+                            <th>Median Value</th>
+                            <th>Last Price</th>
                             <th>Actions</th>
                         </tr>
                         </thead>
@@ -57,18 +64,65 @@
                         {% for query in queries %}
                         <tr>
                             <td>{{ query.id }}</td>
+                            <td>{{ query.name or '' }}</td>
                             <td>{{ query.display }}</td>
+                            <td>{{ query.threshold_pct or 60 }}</td>
+                            <td>{{ query.poll_interval_s or 300 }}</td>
+                            <td>{% if query.active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
                             <td>{{ query.last_found_item }}</td>
+                            <td>{{ query.median_count }}</td>
+                            <td>{% if query.median_value is not none %}{{ query.median_value }}{% else %}<span class="text-muted">n/a</span>{% endif %}</td>
+                            <td>{% if query.last_price is not none %}{{ query.last_price }}{% else %}<span class="text-muted">n/a</span>{% endif %}</td>
                             <td>
                                 <div class="btn-group" role="group">
                                     <a href="/items?query={{ query.query|urlencode }}"
                                        class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-box"></i> View Items
                                     </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                                            data-bs-target="#editModal{{ query.id }}">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
                                             data-bs-target="#deleteModal{{ query.id }}">
                                         <i class="bi bi-trash"></i> Remove
                                     </button>
+                                </div>
+
+                                <!-- Edit Modal -->
+                                <div class="modal fade" id="editModal{{ query.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ query.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form action="/edit_query/{{ query.id }}" method="post">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="editModalLabel{{ query.id }}">Edit Query</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="name{{ query.id }}" class="form-label">Name</label>
+                                                        <input type="text" class="form-control" id="name{{ query.id }}" name="name" value="{{ query.name or '' }}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="threshold_pct{{ query.id }}" class="form-label">Threshold %</label>
+                                                        <input type="number" class="form-control" id="threshold_pct{{ query.id }}" name="threshold_pct" min="1" max="100" value="{{ query.threshold_pct or 60 }}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="poll_interval_s{{ query.id }}" class="form-label">Poll Interval [s]</label>
+                                                        <input type="number" class="form-control" id="poll_interval_s{{ query.id }}" name="poll_interval_s" min="10" max="86400" value="{{ query.poll_interval_s or 300 }}">
+                                                    </div>
+                                                    <div class="form-check form-switch mb-3">
+                                                        <input class="form-check-input" type="checkbox" id="active{{ query.id }}" name="active" value="1" {% if query.active %}checked{% endif %}>
+                                                        <label class="form-check-label" for="active{{ query.id }}">Active</label>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Delete Modal -->
@@ -83,8 +137,7 @@
                                                         aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body">
-                                                Are you sure you want to remove the query: <strong>{{ query.display
-                                                }}</strong>?
+                                                Are you sure you want to remove the query: <strong>{{ query.display }}</strong>?
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -102,7 +155,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4" class="text-center">No queries found</td>
+                            <td colspan="11" class="text-center">No queries found</td>
                         </tr>
                         {% endfor %}
                         </tbody>

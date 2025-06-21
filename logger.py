@@ -65,6 +65,10 @@ def configure_root_logger():
 
 # Get a logger for a specific module
 def get_logger(name):
-    if not logging.getLogger().handlers:
-        configure_root_logger()
-    return logging.getLogger(name)
+    # Always reconfigure root logger to avoid missing handlers in multiprocess or reload scenarios
+    configure_root_logger()
+    logger = logging.getLogger(name)
+    logger.propagate = True
+    # Extra: log a test message to both file and console
+    logger.info(f"[LOGGER-TEST] Logger initialized for {name}")
+    return logger
