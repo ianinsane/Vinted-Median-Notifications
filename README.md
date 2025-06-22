@@ -15,6 +15,20 @@ when items matching your search criteria are posted.
 - **RSS Feed**: Subscribe to your search results with any RSS reader
 - **Telegram Integration**: Receive notifications directly in Telegram
 
+## 🆕 What’s New in This Version?
+
+This version extends the original Vinted-Notifications with advanced price intelligence and system features:
+
+- **Median Price Logic:**
+  - For each query, the median is calculated from all stored price points in the `price_history` table.
+  - Alerts are only triggered if a new item's price is below the configurable threshold percentage of the median (default: 60%).
+- **Price History:**
+  - All prices are stored in the database with a timestamp and used for median calculation.
+- **Configurable Queries:**
+    - Threshold is configurable per query.
+
+For more details and all requirements, see the [PRD](./prd_vinted_price_alert_bot_mvp.md).
+
 ## 📦 Installation
 
 ### Prerequisites

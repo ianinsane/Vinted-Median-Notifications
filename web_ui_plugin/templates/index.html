@@ -271,6 +271,7 @@
                         <thead>
                         <tr>
                             <th>#</th>
+                            <th>Name</th>
                             <th>Query</th>
                             <th>Last Found Item</th>
                         </tr>
@@ -279,12 +280,13 @@
                         {% for query in queries %}
                         <tr>
                             <td>{{ query.id }}</td>
+                            <td>{{ query.name }}</td>
                             <td>{{ query.display }}</td>
                             <td>{{ query.last_found_item }}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="3" class="text-center">No queries found</td>
+                            <td colspan="4" class="text-center">No queries found</td>
                         </tr>
                         {% endfor %}
                         </tbody>

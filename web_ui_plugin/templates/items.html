@@ -23,9 +23,8 @@
                                 <select class="form-select" id="query" name="query">
                                     <option value="">All Queries</option>
                                     {% for query in queries %}
-                                    <option value="{{ query.query }}" {% if selected_query== query.query %}selected{%
-                                            endif %}>
-                                        {{ query.display }}
+                                    <option value="{{ query.query }}" {% if selected_query== query.query %}selected{% endif %}>
+                                        #{{ query.query }}{% if query.name %} – {{ query.name }}{% endif %}
                                     </option>
                                     {% endfor %}
                                 </select>
@@ -87,13 +86,13 @@
                             <div class="position-relative">
                                 <img src="{{ item.photo_url }}" class="card-img-top" alt="{{ item.title }}">
                                 <span class="position-absolute top-0 end-0 m-2 badge bg-primary d-flex align-items-center"><i
-                                        class="bi bi-search me-1"></i> {{ (item.query or '')|truncate(20) }}</span>
+                                        class="bi bi-search me-1"></i> {{ item.query_name or '' }}</span>
                             </div>
                             {% else %}
                             <div class="card-img-top bg-light d-flex align-items-center justify-content-center position-relative">
                                 <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
                                 <span class="position-absolute top-0 end-0 m-2 badge bg-primary d-flex align-items-center"><i
-                                        class="bi bi-search me-1"></i> {{ (item.query or '')|truncate(20) }}</span>
+                                        class="bi bi-search me-1"></i> {{ item.query_name or '' }}</span>
                             </div>
                             {% endif %}
                             <div class="card-body p-3">
@@ -127,6 +126,7 @@
                             <th>Image</th>
                             <th>Title</th>
                             <th>Price</th>
+                            <th>Query Name</th>
                             <th>Query</th>
                             <th>Date</th>
                             <th>Actions</th>
@@ -148,6 +148,7 @@
                             </td>
                             <td>{{ item.title }}</td>
                             <td>{{ item.price }} {{ item.currency }}</td>
+                            <td>{{ item.query_name or '' }}</td>
                             <td>{{ item.query|truncate(30) }}</td>
                             <td>{{ item.timestamp }}</td>
                             <td>
@@ -158,7 +159,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6" class="text-center">No items found</td>
+                            <td colspan="7" class="text-center">No items found</td>
                         </tr>
                         {% endfor %}
                         </tbody>

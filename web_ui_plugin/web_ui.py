@@ -102,7 +102,8 @@ def index():
             'id': query[0],  # Echte DB-ID verwenden
             'query': query[0],  # Echte DB-ID für Links/Filter
             'display': search_text if search_text else query[1],
-            'last_found_item': last_found_item
+            'last_found_item': last_found_item,
+            'name': query[3] if len(query) > 3 else ''
         })
 
     # Get recent items
@@ -116,7 +117,9 @@ def index():
             'currency': item[3],
             'timestamp': datetime.fromtimestamp(item[4]).strftime('%Y-%m-%d %H:%M:%S'),
             'query': item[5],
-            'photo_url': item[6]
+            'photo_url': item[6],
+            # Korrekte Artikel-URL für Dashboard-Recent-Items
+            'url': f'https://www.vinted.fr/items/{item[0]}'
         })
 
     # Get process status from the database
@@ -268,11 +271,12 @@ def items():
             'price': price_value,
             'currency': item[3],
             'timestamp': datetime.fromtimestamp(item[4]).strftime('%Y-%m-%d %H:%M:%S'),
-            # Robust: query ist immer ein String, nie None
             'query': parse_qs(urlparse(item[5]).query).get('search_text', [''])[0] or '',
             'photo_url': item[6],
             'item_id': item[0],
             'raw_query': item[5],
+            'url': f'https://www.vinted.fr/items/{item[0]}',
+            'query_name': next((q[3] for q in queries if str(q[0]) == query_id), '') if query_id else ''
         })
     logger.info(f"[DEBUG] Items filtered out by threshold: {filtered_count}")
     logger.info(f"[DEBUG] Items after filter: {len(formatted_items)}")
@@ -292,7 +296,8 @@ def items():
         formatted_queries.append({
             'id': i + 1,
             'query': str(q[0]),  # Ensure query is a string
-            'display': display_name
+            'display': display_name,
+            'name': q[3] if len(q) > 3 else ''
         })
 
     return render_template('items.html',
@@ -481,7 +486,7 @@ def api_logs():
     total_matching_entries = 0
 
     try:
-        with open(log_file_path, 'r', encoding='utf-8') as file:
+        with open(log_file_path, 'r', encoding='utf-8', errors='replace') as file:
             # Read all lines from the file
             all_lines = file.readlines()
 
