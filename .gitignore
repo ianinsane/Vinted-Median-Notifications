@@ -2,3 +2,4 @@
 .env
 *.env.*
 logs/vinted.log
+vinted_notifications.db
