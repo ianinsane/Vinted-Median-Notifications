@@ -1,3 +1,4 @@
 # Geheimdateien
 .env
 *.env.*
+logs/vinted.log
