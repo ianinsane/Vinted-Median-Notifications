@@ -627,3 +627,7 @@ def web_ui_process():
         logger.info("Web UI process stopped")
     except Exception as e:
         logger.error(f"Error in web UI process: {e}", exc_info=True)
+
+
+if __name__ == "__main__":
+    web_ui_process()
