@@ -24,4 +24,4 @@ ENV FLASK_APP=web_ui_plugin/web_ui.py
 ENV PYTHONUNBUFFERED=1
 
 # Default command
-CMD ["python", "web_ui_plugin/web_ui.py"]
+CMD ["python", "-m", "web_ui_plugin.web_ui"]
